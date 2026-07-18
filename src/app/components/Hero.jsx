@@ -29,8 +29,10 @@ export default function Hero() {
     }
     const frameCount = frameIndices.length;
 
-    const currentFrame = (originalIndex) =>
-      `/scene1/ezgif-frame-${(originalIndex + 1).toString().padStart(3, "0")}.jpg`;
+    const currentFrame = (originalIndex) => {
+      const folder = isMobile ? "scene1-mobile" : "scene1";
+      return `/${folder}/ezgif-frame-${(originalIndex + 1).toString().padStart(3, "0")}.jpg`;
+    };
 
     let loadedCount = 0;
     const images = [];
