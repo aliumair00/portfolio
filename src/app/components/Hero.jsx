@@ -15,128 +15,129 @@ export default function Hero() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
     const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
 
     // Detect mobile for performance optimizations
     const isMobile = window.innerWidth < 768;
-    const frameCount = 158;
 
-    const currentFrame = (originalIndex) => {
-      const folder = isMobile ? "scene1-mobile" : "scene1";
-      return `/${folder}/ezgif-frame-${(originalIndex + 1).toString().padStart(3, "0")}.jpg`;
-    };
+    let canvasST;
+    let parallaxST;
+    let handleResize;
 
-    let loadedCount = 0;
-    const images = [];
+    if (!isMobile && canvas) {
+      const context = canvas.getContext("2d");
+      const frameCount = 158;
 
-    let cssWidth = 0;
-    let cssHeight = 0;
-
-    const setCanvasSize = () => {
-      if (!canvas) return;
-      // Cap DPR on mobile to reduce pixel count
-      const rawDpr = window.devicePixelRatio || 1;
-      const dpr = isMobile ? Math.min(rawDpr, 1.5) : rawDpr;
-      cssWidth = window.innerWidth;
-      cssHeight = window.innerHeight;
-      canvas.width = cssWidth * dpr;
-      canvas.height = cssHeight * dpr;
-      canvas.style.width = `${cssWidth}px`;
-      canvas.style.height = `${cssHeight}px`;
-      context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = isMobile ? "medium" : "high";
-    };
-
-    setCanvasSize();
-
-    // Load and pre-decode images using createImageBitmap for off-thread decoding
-    for (let i = 0; i < frameCount; i++) {
-      const img = new window.Image();
-      img.src = currentFrame(i);
-      img.onload = () => {
-        // createImageBitmap decodes the image asynchronously off the main thread
-        window.createImageBitmap(img)
-          .then((bitmap) => {
-            images[i] = bitmap;
-            loadedCount++;
-            if (i === 0 || loadedCount === 1) {
-              renderFrame(0);
-            }
-          })
-          .catch(() => {
-            // Fallback if createImageBitmap fails
-            images[i] = img;
-            loadedCount++;
-            if (i === 0 || loadedCount === 1) {
-              renderFrame(0);
-            }
-          });
+      const currentFrame = (originalIndex) => {
+        return `/scene1/ezgif-frame-${(originalIndex + 1).toString().padStart(3, "0")}.jpg`;
       };
-      // For browsers that don't trigger onload or fail, keep img reference
-      img.onerror = () => {
-        loadedCount++;
+
+      let loadedCount = 0;
+      const images = [];
+
+      let cssWidth = 0;
+      let cssHeight = 0;
+
+      const setCanvasSize = () => {
+        if (!canvas) return;
+        const rawDpr = window.devicePixelRatio || 1;
+        cssWidth = window.innerWidth;
+        cssHeight = window.innerHeight;
+        canvas.width = cssWidth * rawDpr;
+        canvas.height = cssHeight * rawDpr;
+        canvas.style.width = `${cssWidth}px`;
+        canvas.style.height = `${cssHeight}px`;
+        context.setTransform(rawDpr, 0, 0, rawDpr, 0, 0);
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
       };
-    }
 
-    const renderFrame = (index) => {
-      const img = images[index];
-      if (img && context) {
-        const imgWidth = img.width || 640;
-        const imgHeight = img.height || 360;
-        const hRatio = cssWidth / imgWidth;
-        const vRatio = cssHeight / imgHeight;
-        const ratio = Math.max(hRatio, vRatio);
-        const centerShift_x = (cssWidth - imgWidth * ratio) * 0.5;
-        const centerShift_y = (cssHeight - imgHeight * ratio) * 0;
-
-        context.clearRect(0, 0, cssWidth, cssHeight);
-        context.drawImage(
-          img,
-          0,
-          0,
-          imgWidth,
-          imgHeight,
-          centerShift_x,
-          centerShift_y,
-          imgWidth * ratio,
-          imgHeight * ratio
-        );
-      }
-    };
-
-    const handleResize = () => {
       setCanvasSize();
-      renderFrame(Math.round(canvasObj.frame));
-      ScrollTrigger.refresh();
-    };
-    window.addEventListener("resize", handleResize);
 
-    const canvasObj = { frame: 0 };
-    const canvasST = ScrollTrigger.create({
-      trigger: heroRef.current,
-      start: "top top",
-      end: "+=3000",
-      pin: true,
-      scrub: isMobile ? 1.0 : 2.5, // Snappier scrub on mobile
-      animation: gsap.to(canvasObj, {
-        frame: frameCount - 1,
-        ease: "none",
-        onUpdate: () => renderFrame(Math.round(canvasObj.frame)),
-      }),
-    });
+      // Load and pre-decode images using createImageBitmap for off-thread decoding
+      for (let i = 0; i < frameCount; i++) {
+        const img = new window.Image();
+        img.src = currentFrame(i);
+        img.onload = () => {
+          window.createImageBitmap(img)
+            .then((bitmap) => {
+              images[i] = bitmap;
+              loadedCount++;
+              if (i === 0 || loadedCount === 1) {
+                renderFrame(0);
+              }
+            })
+            .catch(() => {
+              images[i] = img;
+              loadedCount++;
+              if (i === 0 || loadedCount === 1) {
+                renderFrame(0);
+              }
+            });
+        };
+        img.onerror = () => {
+          loadedCount++;
+        };
+      }
 
-    const parallaxST = ScrollTrigger.create({
-      trigger: heroRef.current,
-      start: "top top",
-      end: "+=3000",
-      scrub: true,
-      animation: gsap.to(scrollContainerRef.current, {
-        y: -300,
-        opacity: 0,
-        ease: "none"
-      })
-    });
+      const renderFrame = (index) => {
+        const img = images[index];
+        if (img && context) {
+          const imgWidth = img.width || 640;
+          const imgHeight = img.height || 360;
+          const hRatio = cssWidth / imgWidth;
+          const vRatio = cssHeight / imgHeight;
+          const ratio = Math.max(hRatio, vRatio);
+          const centerShift_x = (cssWidth - imgWidth * ratio) * 0.5;
+          const centerShift_y = (cssHeight - imgHeight * ratio) * 0;
+
+          context.clearRect(0, 0, cssWidth, cssHeight);
+          context.drawImage(
+            img,
+            0,
+            0,
+            imgWidth,
+            imgHeight,
+            centerShift_x,
+            centerShift_y,
+            imgWidth * ratio,
+            imgHeight * ratio
+          );
+        }
+      };
+
+      const canvasObj = { frame: 0 };
+      canvasST = ScrollTrigger.create({
+        trigger: heroRef.current,
+        start: "top top",
+        end: "+=3000",
+        pin: true,
+        scrub: 2.5,
+        animation: gsap.to(canvasObj, {
+          frame: frameCount - 1,
+          ease: "none",
+          onUpdate: () => renderFrame(Math.round(canvasObj.frame)),
+        }),
+      });
+
+      parallaxST = ScrollTrigger.create({
+        trigger: heroRef.current,
+        start: "top top",
+        end: "+=3000",
+        scrub: true,
+        animation: gsap.to(scrollContainerRef.current, {
+          y: -300,
+          opacity: 0,
+          ease: "none"
+        })
+      });
+
+      handleResize = () => {
+        setCanvasSize();
+        renderFrame(Math.round(canvasObj.frame));
+        ScrollTrigger.refresh();
+      };
+      window.addEventListener("resize", handleResize);
+    }
 
     const chars = textRef.current.querySelectorAll(".char");
     gsap.fromTo(
@@ -222,9 +223,9 @@ export default function Hero() {
     });
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      canvasST.kill();
-      parallaxST.kill();
+      if (handleResize) window.removeEventListener("resize", handleResize);
+      if (canvasST) canvasST.kill();
+      if (parallaxST) parallaxST.kill();
       if (statsAnim.scrollTrigger) statsAnim.scrollTrigger.kill();
       statsCountAnims.forEach(anim => {
         if (anim.scrollTrigger) anim.scrollTrigger.kill();
@@ -235,9 +236,16 @@ export default function Hero() {
   return (
     <>
       <section ref={heroRef} className="relative h-screen w-full max-w-[1920px] mx-auto">
+        {/* Mobile Static Background Image */}
+        <div 
+          className="absolute inset-0 w-full h-full bg-cover bg-center z-0 md:hidden"
+          style={{ backgroundImage: "url('/hero-mobile.jpeg')" }}
+        ></div>
+
+        {/* Desktop Interactive Canvas */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-cover z-0"
+          className="absolute inset-0 w-full h-full object-cover z-0 hidden md:block"
           style={{ willChange: "transform" }}
         ></canvas>
 
