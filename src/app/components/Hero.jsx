@@ -16,20 +16,33 @@ export default function Hero() {
     gsap.registerPlugin(ScrollTrigger);
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
-    const frameCount = 158;
-    const currentFrame = (index) =>
-      `/scene1/ezgif-frame-${(index + 1).toString().padStart(3, "0")}.jpg`;
+
+    // Detect mobile for performance optimizations
+    const isMobile = window.innerWidth < 768;
+    // On mobile, use every 3rd frame to reduce memory (158 -> ~53 frames)
+    // On desktop, use all 158 frames
+    const totalFrames = 158;
+    const frameStep = isMobile ? 3 : 1;
+    const frameIndices = [];
+    for (let i = 0; i < totalFrames; i += frameStep) {
+      frameIndices.push(i);
+    }
+    const frameCount = frameIndices.length;
+
+    const currentFrame = (originalIndex) =>
+      `/scene1/ezgif-frame-${(originalIndex + 1).toString().padStart(3, "0")}.jpg`;
 
     let loadedCount = 0;
     const images = [];
 
-    
     let cssWidth = 0;
     let cssHeight = 0;
 
     const setCanvasSize = () => {
       if (!canvas) return;
-      const dpr = window.devicePixelRatio || 1;
+      // Cap DPR to 1.5 on mobile to massively reduce canvas pixel count
+      const rawDpr = window.devicePixelRatio || 1;
+      const dpr = isMobile ? Math.min(rawDpr, 1.5) : rawDpr;
       cssWidth = window.innerWidth;
       cssHeight = window.innerHeight;
       canvas.width = cssWidth * dpr;
@@ -38,14 +51,15 @@ export default function Hero() {
       canvas.style.height = `${cssHeight}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
       context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
+      context.imageSmoothingQuality = isMobile ? "medium" : "high";
     };
 
     setCanvasSize();
 
+    // Load only the frames we need
     for (let i = 0; i < frameCount; i++) {
       const img = new window.Image();
-      img.src = currentFrame(i);
+      img.src = currentFrame(frameIndices[i]);
       img.onload = () => {
         loadedCount++;
         if (loadedCount === 1 && i === 0) {
@@ -54,6 +68,10 @@ export default function Hero() {
       };
       images.push(img);
     }
+
+    // Throttled render using rAF to prevent scroll jank on mobile
+    let renderScheduled = false;
+    let pendingFrame = 0;
 
     const renderFrame = (index) => {
       if (images[index] && images[index].complete && context) {
@@ -79,6 +97,17 @@ export default function Hero() {
       }
     };
 
+    const scheduleRender = (index) => {
+      pendingFrame = index;
+      if (!renderScheduled) {
+        renderScheduled = true;
+        requestAnimationFrame(() => {
+          renderFrame(pendingFrame);
+          renderScheduled = false;
+        });
+      }
+    };
+
     const handleResize = () => {
       setCanvasSize();
       renderFrame(Math.round(canvasObj.frame));
@@ -92,11 +121,18 @@ export default function Hero() {
       start: "top top",
       end: "+=3000",
       pin: true,
-      scrub: 2.5,
+      scrub: isMobile ? 1.5 : 2.5,
       animation: gsap.to(canvasObj, {
         frame: frameCount - 1,
         ease: "none",
-        onUpdate: () => renderFrame(Math.round(canvasObj.frame)),
+        onUpdate: () => {
+          const idx = Math.round(canvasObj.frame);
+          if (isMobile) {
+            scheduleRender(idx);
+          } else {
+            renderFrame(idx);
+          }
+        },
       }),
     });
 
@@ -212,7 +248,7 @@ export default function Hero() {
         <canvas
           ref={canvasRef}
           className="absolute inset-0 w-full h-full object-cover z-0"
-          style={{ willChange: "contents" }}
+          style={{ willChange: "transform" }}
         ></canvas>
 
         <div className=" absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent z-10"></div>

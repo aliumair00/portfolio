@@ -23,8 +23,8 @@ export default function Home() {
       gestureOrientation: "vertical",
       smoothWheel: true,
       wheelMultiplier: 0.8,
-      smoothTouch: false,
-      touchMultiplier: 1.5,
+      smoothTouch: true,
+      touchMultiplier: 1.2,
     });
 
     lenis.on("scroll", ScrollTrigger.update);
