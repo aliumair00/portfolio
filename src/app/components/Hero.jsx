@@ -19,15 +19,7 @@ export default function Hero() {
 
     // Detect mobile for performance optimizations
     const isMobile = window.innerWidth < 768;
-    // On mobile, use every 3rd frame to reduce memory (158 -> ~53 frames)
-    // On desktop, use all 158 frames
-    const totalFrames = 158;
-    const frameStep = isMobile ? 3 : 1;
-    const frameIndices = [];
-    for (let i = 0; i < totalFrames; i += frameStep) {
-      frameIndices.push(i);
-    }
-    const frameCount = frameIndices.length;
+    const frameCount = 158;
 
     const currentFrame = (originalIndex) => {
       const folder = isMobile ? "scene1-mobile" : "scene1";
@@ -42,7 +34,7 @@ export default function Hero() {
 
     const setCanvasSize = () => {
       if (!canvas) return;
-      // Cap DPR to 1.5 on mobile to massively reduce canvas pixel count
+      // Cap DPR on mobile to reduce pixel count
       const rawDpr = window.devicePixelRatio || 1;
       const dpr = isMobile ? Math.min(rawDpr, 1.5) : rawDpr;
       cssWidth = window.innerWidth;
@@ -58,55 +50,58 @@ export default function Hero() {
 
     setCanvasSize();
 
-    // Load only the frames we need
+    // Load and pre-decode images using createImageBitmap for off-thread decoding
     for (let i = 0; i < frameCount; i++) {
       const img = new window.Image();
-      img.src = currentFrame(frameIndices[i]);
+      img.src = currentFrame(i);
       img.onload = () => {
-        loadedCount++;
-        if (loadedCount === 1 && i === 0) {
-          renderFrame(0);
-        }
+        // createImageBitmap decodes the image asynchronously off the main thread
+        window.createImageBitmap(img)
+          .then((bitmap) => {
+            images[i] = bitmap;
+            loadedCount++;
+            if (i === 0 || loadedCount === 1) {
+              renderFrame(0);
+            }
+          })
+          .catch(() => {
+            // Fallback if createImageBitmap fails
+            images[i] = img;
+            loadedCount++;
+            if (i === 0 || loadedCount === 1) {
+              renderFrame(0);
+            }
+          });
       };
-      images.push(img);
+      // For browsers that don't trigger onload or fail, keep img reference
+      img.onerror = () => {
+        loadedCount++;
+      };
     }
 
-    // Throttled render using rAF to prevent scroll jank on mobile
-    let renderScheduled = false;
-    let pendingFrame = 0;
-
     const renderFrame = (index) => {
-      if (images[index] && images[index].complete && context) {
-        const img = images[index];
-        const hRatio = cssWidth / img.width;
-        const vRatio = cssHeight / img.height;
+      const img = images[index];
+      if (img && context) {
+        const imgWidth = img.width || 640;
+        const imgHeight = img.height || 360;
+        const hRatio = cssWidth / imgWidth;
+        const vRatio = cssHeight / imgHeight;
         const ratio = Math.max(hRatio, vRatio);
-        const centerShift_x = (cssWidth - img.width * ratio) * 0.5;
-        const centerShift_y = (cssHeight - img.height * ratio) * 0;
+        const centerShift_x = (cssWidth - imgWidth * ratio) * 0.5;
+        const centerShift_y = (cssHeight - imgHeight * ratio) * 0;
 
         context.clearRect(0, 0, cssWidth, cssHeight);
         context.drawImage(
           img,
           0,
           0,
-          img.width,
-          img.height,
+          imgWidth,
+          imgHeight,
           centerShift_x,
           centerShift_y,
-          img.width * ratio,
-          img.height * ratio
+          imgWidth * ratio,
+          imgHeight * ratio
         );
-      }
-    };
-
-    const scheduleRender = (index) => {
-      pendingFrame = index;
-      if (!renderScheduled) {
-        renderScheduled = true;
-        requestAnimationFrame(() => {
-          renderFrame(pendingFrame);
-          renderScheduled = false;
-        });
       }
     };
 
@@ -123,18 +118,11 @@ export default function Hero() {
       start: "top top",
       end: "+=3000",
       pin: true,
-      scrub: isMobile ? 1.5 : 2.5,
+      scrub: isMobile ? 1.0 : 2.5, // Snappier scrub on mobile
       animation: gsap.to(canvasObj, {
         frame: frameCount - 1,
         ease: "none",
-        onUpdate: () => {
-          const idx = Math.round(canvasObj.frame);
-          if (isMobile) {
-            scheduleRender(idx);
-          } else {
-            renderFrame(idx);
-          }
-        },
+        onUpdate: () => renderFrame(Math.round(canvasObj.frame)),
       }),
     });
 
