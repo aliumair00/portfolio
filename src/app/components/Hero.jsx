@@ -16,14 +16,11 @@ export default function Hero() {
     gsap.registerPlugin(ScrollTrigger);
     const canvas = canvasRef.current;
 
-    // Detect mobile for performance optimizations
-    const isMobile = window.innerWidth < 768;
+    let mm = gsap.matchMedia();
 
-    let canvasST;
-    let parallaxST;
-    let handleResize;
-
-    if (!isMobile && canvas) {
+    // Only run canvas scrolling and pinning on Desktop (min-width: 768px)
+    mm.add("(min-width: 768px)", () => {
+      if (!canvas) return;
       const context = canvas.getContext("2d");
       const frameCount = 158;
 
@@ -106,7 +103,7 @@ export default function Hero() {
       };
 
       const canvasObj = { frame: 0 };
-      canvasST = ScrollTrigger.create({
+      const canvasST = ScrollTrigger.create({
         trigger: heroRef.current,
         start: "top top",
         end: "+=3000",
@@ -119,7 +116,7 @@ export default function Hero() {
         }),
       });
 
-      parallaxST = ScrollTrigger.create({
+      const parallaxST = ScrollTrigger.create({
         trigger: heroRef.current,
         start: "top top",
         end: "+=3000",
@@ -131,13 +128,19 @@ export default function Hero() {
         })
       });
 
-      handleResize = () => {
+      const handleResize = () => {
         setCanvasSize();
         renderFrame(Math.round(canvasObj.frame));
         ScrollTrigger.refresh();
       };
       window.addEventListener("resize", handleResize);
-    }
+
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        canvasST.kill();
+        parallaxST.kill();
+      };
+    });
 
     const chars = textRef.current.querySelectorAll(".char");
     gsap.fromTo(
@@ -223,9 +226,7 @@ export default function Hero() {
     });
 
     return () => {
-      if (handleResize) window.removeEventListener("resize", handleResize);
-      if (canvasST) canvasST.kill();
-      if (parallaxST) parallaxST.kill();
+      mm.revert();
       if (statsAnim.scrollTrigger) statsAnim.scrollTrigger.kill();
       statsCountAnims.forEach(anim => {
         if (anim.scrollTrigger) anim.scrollTrigger.kill();
