@@ -252,7 +252,7 @@ export default function Hero() {
         <div className=" absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent z-10"></div>
 
         {/* Left Side Vertical Socials */}
-        <div className="hidden md:flex absolute left-10 top-1/2 -translate-y-1/2 z-20 flex-col gap-6 items-center pointer-events-auto hero-vertical-socials opacity-0">
+        <div className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-6 items-center pointer-events-auto hero-vertical-socials opacity-0">
           <a
             href="https://github.com/aliumair00"
             target="_blank"
@@ -288,7 +288,7 @@ export default function Hero() {
             </svg>
           </a>
 
-          <div className="h-24 w-[1px] bg-gradient-to-b from-gray-600 via-gray-700 to-transparent" />
+          <div className="hidden md:block h-24 w-[1px] bg-gradient-to-b from-gray-600 via-gray-700 to-transparent" />
         </div>
 
         <div className=" absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent z-10"></div>
