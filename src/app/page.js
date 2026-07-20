@@ -9,6 +9,7 @@ import Hero from "@/app/components/Hero";
 import About from "@/app/components/About";
 import Services from "@/app/components/Services";
 import Projects from "@/app/components/Projects";
+import ScrollTimeline from "@/app/components/ScrollTimeline";
 import Contact from "@/app/components/Contact";
 import SocialSidebar from "@/app/components/SocialSidebar";
 
@@ -46,6 +47,7 @@ export default function Home() {
       <About />
       <Services />
       <Projects />
+      <ScrollTimeline />
       <Contact />
     </main>
   );
