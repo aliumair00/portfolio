@@ -47,7 +47,7 @@ export const DEFAULT_EVENTS = [
     tags: ["MERN Stack", "React.js", "Node.js", "Express.js", "MongoDB", "JWT", "RBAC"],
   },
   {
-    year: "Mar 2026 - Present",
+    year: "Feb 2026 - Present",
     title: "Junior Full Stack Developer",
     subtitle: "Popcorn Studio (Johar Town, Lahore)",
     description:
