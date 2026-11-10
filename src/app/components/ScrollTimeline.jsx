@@ -39,7 +39,7 @@ export const DEFAULT_EVENTS = [
     tags: ["React.js", "Node.js", "Express.js", "MongoDB", "REST APIs"],
   },
   {
-    year: "Dec 2025 - Mar 2026",
+    year: "Dec 2025 - Feb 2026",
     title: "MERN Stack Developer (Internship)",
     subtitle: "IIFA Tech",
     description:
